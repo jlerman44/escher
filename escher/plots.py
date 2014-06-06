@@ -5,7 +5,7 @@ import urls
 
 from os.path import dirname, abspath, join, isfile, isdir
 from warnings import warn
-from urllib2 import urlopen, HTTPError, URLError
+from tornado.httpclient import HTTPClient, HTTPError
 import json
 import os
 import shutil
@@ -67,12 +67,16 @@ def load_resource(resource, name, safe=False):
     """Load a resource that could be a file, URL, or json string."""
     # if it's a url, download it
     if resource.startswith('http://') or resource.startswith('https://'):
+        http_client = HTTPClient()
+        response = http_client.fetch(resource, headers={'Accept-Encoding': 'gzip'})
+        if response.code == 404:
+            raise HTTPError()
+        print resource
         try:
-            download = urlopen(resource)
-        except URLError as err:
-            raise err
-        else:
-            return download.read()
+            print response.headers#['Content-Encoding']
+        except:
+            pass
+        return response.body
     # if it's a filepath, load it
     if os.path.exists(resource):
         if (safe):
@@ -217,9 +221,13 @@ class Builder(Plot):
                 warn(model_not_cached)
                 try:
                     url = urls.model_download + model_name + ".json"
-                    download = urlopen(url)
+                    http_client = HTTPClient()
+                    response = http_client.fetch(url, headers={'Accept-Encoding': 'gzip'})
+                    if response.code == 404:
+                        raise HTTPError()
+                    download = response.body
                     with open(model_filename, "w") as outfile:
-                        outfile.write(download.read())
+                        outfile.write(download)
                 except HTTPError:
                     raise ValueError("No model named %s found in cache or at %s" % \
                                      (model_name, url))
@@ -249,9 +257,13 @@ class Builder(Plot):
                 warn(map_not_cached)
                 try:
                     url = urls.map_download + map_name + ".json"
-                    download = urlopen(url)
+                    http_client = HTTPClient()
+                    response = http_client.fetch(url, headers={'Accept-Encoding': 'gzip'})
+                    if response.code == 404:
+                        raise HTTPError()
+                    download = response.body    
                     with open(map_filename, "w") as outfile:
-                        outfile.write(download.read())
+                        outfile.write(download)
                 except HTTPError:
                     raise ValueError("No map named %s found in cache or at %s" % \
                                      (map_name, url))
@@ -299,8 +311,13 @@ class Builder(Plot):
     def _embed_style(self):
         if self.css is not None:
             return unicode(self.css)
-        download = urlopen(urls.builder_embed_css)
-        return unicode(download.read().replace('\n', ' '))
+        url = urls.builder_embed_css
+        http_client = HTTPClient()
+        response = http_client.fetch(url, headers={'Accept-Encoding': 'gzip'})
+        if response.code == 404:
+            raise HTTPError()
+        download = response.body                            
+        return unicode(download.replace('\n', ' '))
     
     def _get_html(self, dev=False, wrapper=False, enable_editing=True,
                   enable_keys=True, fill_screen=False, height="800px"):

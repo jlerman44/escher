@@ -7,7 +7,7 @@ import os
 from os.path import join
 import json
 from pytest import raises
-from urllib2 import URLError
+from tornado.httpclient import HTTPError
 
 def test_get_cache_dir():
     d = get_cache_dir()
@@ -41,11 +41,11 @@ def test_load_resource(tmpdir):
     url = "https://zakandrewking.github.io/escher/maps/v1/iJO1366_central_metabolism.json"
     _ = json.loads(load_resource(url, 'name'))
         
-    with raises(URLError):
-        load_resource("http://asodivhowef", 'name')
+    with raises(HTTPError):
+        load_resource("http://www.asodivhowef.com", 'name')
        
-    with raises(URLError):
-        load_resource("https://asodivhowef", 'name')
+    with raises(HTTPError):
+        load_resource("https://www.asodivhowef.com", 'name')
 
     with raises(ValueError) as err:
         p = join(str(tmpdir), 'dummy')

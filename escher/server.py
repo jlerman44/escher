@@ -82,10 +82,14 @@ class BuilderHandler(BaseHandler):
             http_client = AsyncHTTPClient()
             request_url = ('http://localhost:%d/css/builder-embed.css' %
                            (PORT))
-            response = yield gen.Task(http_client.fetch, request_url)
+            response = yield gen.Task(http_client.fetch, request_url, headers={'Accept-Encoding': 'gzip'})
             if response.code == 404:
                 data = None
             else:
+                print request_url
+                try:
+                    print response.headers#['Content-Encoding']
+                except: pass
                 data = response.body.replace('\n', ' ').replace('  ', ' ')
             kwargs['css'] = data
         builder = Builder(safe=True, **kwargs)
